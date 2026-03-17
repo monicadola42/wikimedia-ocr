@@ -90,20 +90,26 @@ class OcrController extends AbstractController {
 	 * @suppress PhanSuspiciousValueComparison
 	 */
 	private function setup(): void {
-		$requestedEngine = $this->request->query->get( 'engine', static::$params['engine'] );
-		try {
-			$this->engine = $this->engineFactory->get( $requestedEngine );
-		} catch ( EngineNotFoundException $e ) {
-			$this->addFlash( 'error', $this->intuition->msg(
-				'engine-not-found-warning',
-				[ 'variables' => [ $requestedEngine, static::DEFAULT_ENGINE ] ]
-			) );
-			$this->engine = $this->engineFactory->get( static::DEFAULT_ENGINE );
-		}
+	$requestedEngine = $this->request->query->get( 'engine', static::$params['engine'] );
 
-		static::$params['engine'] = $this->engine::getId();
-		$this->setEngineOptions();
+	// 🔧 Fix: handle array input
+	if (is_array($requestedEngine)) {
+		$requestedEngine = reset($requestedEngine);
+	}
 
+	try {
+		$this->engine = $this->engineFactory->get( $requestedEngine );
+	} catch ( EngineNotFoundException $e ) {
+		$this->addFlash( 'error', $this->intuition->msg(
+			'engine-not-found-warning',
+			[ 'variables' => [ $requestedEngine, static::DEFAULT_ENGINE ] ]
+		) );
+		$this->engine = $this->engineFactory->get( static::DEFAULT_ENGINE );
+	}
+
+	static::$params['engine'] = $this->engine::getId();
+	$this->setEngineOptions();
+}
 		// Parameters.
 		static::$params['image'] = (string)$this->request->query->get( 'image' );
 		// Change protocol-relative URLs to https to avoid issues with Curl.
